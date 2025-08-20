@@ -1,0 +1,138 @@
+﻿@inject Skinde.Client.KindeService KindeService
+@inject IConfiguration Configuration
+
+<MudDialog>
+    <TitleContent>
+        Assign Organizations
+    </TitleContent>
+    <DialogContent>
+        @if (User == null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudText Typo="Typo.body1">Manage organizations for user <b>@User?.FirstName @User?.LastName</b> (<b>@User?.Email</b>).</MudText>
+            <div style="display: flex; align-items: center; margin-bottom:20px;">
+                <MudAutocomplete T="string" @bind-Value="selectedOrganization" SearchFunc="SearchOrganizations" Label="Available Organizations" />
+                <MudButton OnClick="AddOrganization" Variant="Variant.Filled" Color="Color.Default" style="margin-left: 8px;">Add</MudButton>
+            </div>
+            <MudList T="Skinde.Client.Kinde.Organization">
+                @foreach (var org in assignedOrganizations)
+                {
+                    if (org?.Code != null)
+                    {
+                        <MudListItem>
+                            @org.Name
+                            <MudButton OnClick="() => RemoveOrganization(org.Code)" Color="Color.Secondary">Remove</MudButton>
+                        </MudListItem>
+                    }
+                }
+            </MudList>
+        }
+
+        @if (!string.IsNullOrEmpty(ResultMessage))
+        {
+            <MudText Typo="Typo.body2" Class="result-message">@ResultMessage</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <div style="margin-top:20px;">
+            <MudButton OnClick="Save" Variant="Variant.Filled" Color="Color.Default" Disabled="User == null">Save</MudButton>
+            <MudButton OnClick="Cancel" Variant="Variant.Filled" Color="Color.Default" Disabled="User == null">Cancel</MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public Skinde.Client.Kinde.User? User { get; set; }
+
+    private string? selectedOrganization;
+    private List<Skinde.Client.Kinde.Organization> allOrganizations = new();
+    private List<Skinde.Client.Kinde.Organization> assignedOrganizations = new();
+    private List<Skinde.Client.Kinde.Organization> availableOrganizations = new();
+    private string ResultMessage { get; set; } = string.Empty;
+    private int MaxOrganizationAssignment { get; set; } // 0=unlimited
+
+    protected override async Task OnInitializedAsync()
+    {
+        MaxOrganizationAssignment = Configuration.GetValue<int>("MaxOrganizationAssignments");
+
+        if (User?.Organizations != null)
+        {
+            allOrganizations = await KindeService.GetOrganizations();
+            assignedOrganizations = allOrganizations.Where(o => o?.Code != null && User.Organizations.Contains(o.Code)).OrderBy(o=>o.Name).ToList();
+            availableOrganizations = allOrganizations.Except(assignedOrganizations).OrderBy(o=>o.Name).ToList();
+        }
+    }
+
+    private async Task<IEnumerable<string?>> SearchOrganizations(string value, CancellationToken token)
+    {
+        var availableOrgNames = availableOrganizations.Select(o => o.Name);
+        if (availableOrgNames == null)
+            return await Task.FromResult(Enumerable.Empty<string>());
+
+        if (string.IsNullOrEmpty(value))
+            return await Task.FromResult(availableOrgNames);
+
+        return await Task.FromResult(availableOrgNames.Where(x => x!=null && x.Contains(value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    private void AddOrganization()
+    {
+        var organization = availableOrganizations.FirstOrDefault(o => o.Name == selectedOrganization);
+        if (organization != null)
+        {
+            assignedOrganizations.Add(organization);
+            availableOrganizations.Remove(organization);
+            assignedOrganizations = assignedOrganizations.OrderBy(o => o.Name).ToList();
+            selectedOrganization = null;
+        }
+    }
+
+    private void RemoveOrganization(string orgCode)
+    {
+        var organization = assignedOrganizations.FirstOrDefault(o => o.Code == orgCode);
+        if (organization != null)
+        {
+            assignedOrganizations.Remove(organization);
+            availableOrganizations.Add(organization);
+            availableOrganizations = availableOrganizations.OrderBy(o => o.Name).ToList();
+        }
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrEmpty(User?.Id))
+        {
+            ResultMessage = "Internal Error: User ID is missing.";
+            return;
+        }
+
+        if (MaxOrganizationAssignment > 0 && assignedOrganizations.Count > MaxOrganizationAssignment)
+        {
+            ResultMessage = $"Issue: Configuration only allows {MaxOrganizationAssignment} organizations.";
+            return;
+        }
+
+        var organizationsToAdd = assignedOrganizations.Select(o => o.Code).Where(code => code != null).Cast<string>().Except(User?.Organizations ?? new List<string>()).ToList();
+        var organizationsToRemove = (User?.Organizations ?? new List<string>()).Except(assignedOrganizations.Select(o => o.Code).Where(code => code != null).Cast<string>()).ToList();
+
+        if (organizationsToRemove.Any() && User!=null)
+            await KindeService.RemoveUserOrganizations(User.Id, organizationsToRemove);
+
+        if (organizationsToAdd.Any() && User!=null)
+            await KindeService.AddUserOrganizations(User.Id, organizationsToAdd);
+
+        MudDialog?.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+}

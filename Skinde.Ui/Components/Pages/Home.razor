@@ -1,0 +1,21 @@
+﻿@page "/"
+@using Microsoft.Extensions.Options
+@inject Skinde.Client.KindeService KindeService
+
+<Title Name="" />
+
+<OrganizationDataGrid Organizations="@organizations" />
+
+@code {
+    private List<Skinde.Client.Kinde.Organization>? organizations;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            organizations = await KindeService.GetOrganizations();
+
+            StateHasChanged();
+        }
+    }
+}

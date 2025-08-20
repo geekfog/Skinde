@@ -1,0 +1,21 @@
+﻿@page "/roles"
+@inject Client.KindeService KindeService
+
+<Title Name="Roles"/>
+
+<RoleDataGrid Roles="@_roles" Users="@_users" />
+
+@code {
+    private List<Skinde.Client.Kinde.User>? _users;
+    private List<Client.Kinde.Role>? _roles;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _users = await KindeService.GetUsers(includeRoleId: true);
+            _roles = await KindeService.GetRoles();
+            StateHasChanged();
+        }
+    }
+}

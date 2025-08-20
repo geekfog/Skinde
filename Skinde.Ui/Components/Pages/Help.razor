@@ -1,0 +1,29 @@
+﻿@page "/help"
+@using Skinde.Ui.Services
+@using Markdig
+
+<Title Name="Information" />
+<h1>Information</h1>
+<p>&nbsp;</p>
+
+<div id="md-help" class="col-6">
+    @(new MarkupString(readmeContent))
+</div>
+
+@code {
+    private string readmeContent = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var readmePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "README.md");
+        if (File.Exists(readmePath))
+        {
+            var markdown = await File.ReadAllTextAsync(readmePath);
+            var pipeline = new MarkdownPipelineBuilder()
+                .UseAdvancedExtensions()
+                .Use<CustomMarkdownExtension>()
+                .Build();
+            readmeContent = Markdown.ToHtml(markdown, pipeline);
+        }
+    }
+}

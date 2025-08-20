@@ -1,0 +1,8 @@
+﻿<PageTitle>@FullTitle</PageTitle>
+
+@code {
+    [Parameter]
+    public string Name { get; set; } = String.Empty;
+
+    private string FullTitle => string.IsNullOrEmpty(Name) ? "Skinde" : $"Skinde | {Name}"; 
+}

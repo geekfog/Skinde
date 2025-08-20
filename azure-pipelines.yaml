@@ -1,0 +1,213 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Azure Pipelines YAML script
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PARAMETERS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+parameters:
+  - name: p_azAppBase            # Azure Application Base Name (for naming Azure resources - should be changed to avoid conflicts within a data center)
+    type: string
+    default: 'Skinde'
+  - name: doServiceConnPRD         # Production Azure DevOps Service Connection to Azure Resources (e.g., Web App, Function, KeyVault)
+    type: string
+  - name: p_doServiceConnNonPRD    # Non-Production Azure DevOps Service Connection to Azure Resources (e.g., Web App, Function, KeyVault)
+    type: string
+  - name: p_azSubscriptionIdPRD    # Azure Subscription ID (expecting GUID)
+    type: string
+  - name: p_azSubscriptionIdNonPRD # Azure Subscription ID (expecting GUID)
+    type: string
+  - name: p_azTenantId             # Azure Tenant ID (expecting GUID)
+    type: string
+  - name: p_azDcRef                # Azure Data Center Reference (for naming)
+    type: string
+    default: 'usnorth'
+  - name: p_azDcLoc              # Azure Data Center Location (for resources)
+    type: string
+    default: 'northcentralus'
+  - name: p_azTimeZoneWindows
+    type: string
+    default: 'Central Standard Time'
+  - name: p_azTimeZoneLinux
+    type: string
+    default: 'America/Chicago'
+  - name: p_azTagDepartment
+    type: string
+    default: 'Software Engineering'
+  - name: p_azTagManager
+    type: string
+    default: 'Development Team'
+  - name: p_azTagOwner
+    type: string
+    default: 'Software Engineering'
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# EVENTS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+trigger:
+  batch: 'true'
+  branches:
+    include:
+    - release/*
+    - hotfix/*
+    - feature/build/*
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# GLOBAL SETTINGS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+variables:
+  - group: Skinde-Parameters  # Variable Group (Azure DevOps Library) to store global variables, especially parameters for this pipeline
+  
+  # ~~~~~~~[Pipeline]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  isReleaseBranch: $[or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'),startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))]
+  isFeatureBranch: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/feature/')]
+  doEnvironmentBase: 'Skinde'                                                                # Azure DevOps Environment base name (No fun characters allowed)
+  doAgent: 'ubuntu-latest'                                                                   # 'vmImage' option within the build job pool (Azure DevOps Agent) https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops&tabs=yaml
+  isDebug: true                                                                              # Additional debugging information within the pipeline
+  #System.Debug: false                                                                       # Pipelines-based configuration
+    
+  # ~~~~~~~[Azure DevOps Resources]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  doArtifactFolder: 'drop'                                                                   # Folder reference
+  doWebProject: 'Skinde.Ui'                                                                  # Web App project
+  doPublishDirectory: '$(System.DefaultWorkingDirectory)/publish'                            # WORKING DIRECTORY Location of build and publish
+  doBuildDebug: 'Debug'                                                                      # Debug bits for desired environments (e.g., DEV)
+  doBuildRelease: 'Release'                                                                  # Release bits for desired environments (e.g., PRD)
+  doDotnetVersion: '8.0.x'                                                                   # Dotnet Version https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/tool/dotnet-core-tool-installer?view=azure-devops
+                                
+
+  # ~~~~~~~[Azure Resources]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  azCommonTags: '{"CreatedBy":"Azure DevOps","Department":"${{ parameters.p_azTagDepartment }}","Manager":"${{ parameters.p_azTagManager }}","Owner":"${{ parameters.p_azTagOwner }}","Product": "${{ parameters.p_azAppBase }}"}' # minimied layout makes it a JSON object
+
+  azArmEnabled: true                                                                         # Whether to run the BICEP ARM Template
+  azArmFile: 'azure-arm.bicep'                                                               # BICEP ARM Template
+
+  azResourceGroup: ''                                                                        # Initialize for assignment
+  azWebAppName: ''                                                                           # Initialize for assignment
+  azAkvAppName: ''                                                                           # Initialize for assignment
+
+stages:
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# BUILD
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- stage: Build
+  displayName: '${{ variables.doEnvironmentBase }} Build Solution' # More complicated expression used since jobs and stage display names are set at compile time
+
+  jobs:
+  - job: Build
+    displayName: 'Top | Build Job'
+    pool:
+      vmImage: $(doAgent) 
+
+    steps:
+    # ~~~~~~~[Preparation]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    - task: UseDotNet@2
+      displayName: 'Top | Use .NET Core SDK $(doDotnetVersion)'
+      inputs:
+        packageType: sdk
+        version: $(doDotnetVersion)
+        installationPath: $(Agent.ToolsDirectory)/dotnet
+
+    # ~~~~~~~[Build and Package]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    - template: azure-pipelines-build.yaml
+      parameters: 
+        p_vsBuildEnvironment: $(doBuildDebug) # Debug Version
+        p_runUnitTests: true
+
+    - template: azure-pipelines-build.yaml
+      parameters: 
+        p_vsBuildEnvironment: $(doBuildRelease) # Release Version
+
+    # ~~~~~~~[Supporting Files]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    - task: PowerShell@2
+      displayName: 'Top | Publish Supporting Files'
+      inputs:
+        targetType: inline
+        script: |
+          Write-Host "Artifact Staging Folder (Destination): $(Build.ArtifactStagingDirectory)"
+          Copy-Item -Path "./*.bicep" -Destination "$(Build.ArtifactStagingDirectory)"
+          Exit 0
+
+    # ~~~~~~~[Finalize Build]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    - task: PowerShell@2
+      displayName: 'Top | Display Releases Folder Contents'
+      inputs:
+        targetType: inline
+        script: |
+          Get-ChildItem "$(Build.ArtifactStagingDirectory)" -Recurse | Format-Table # Format-List
+          Exit 0 
+      condition: and(succeeded(), eq(variables['isDebug'], 'true'))
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts Staging to Release'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        doArtifactFolder: '$(doArtifactFolder)'
+        publishLocation: 'Container'
+      condition: succeededOrFailed()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# RELEASE DEV
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- stage: Deploy_DEV
+  displayName: '${{ variables.doEnvironmentBase }} DEV Release'
+  dependsOn: Build
+  condition: succeeded()
+
+  jobs:
+  - deployment: DeployAppServices
+    displayName: 'Top | Release Deploy Job DEV'
+    environment: '$(doEnvironmentBase) DEV'
+    pool:
+      vmImage: $(doAgent)
+
+    strategy:
+      runOnce:
+        deploy:
+
+          steps:
+          - template: azure-pipelines-release.yaml
+            parameters:
+              p_azAppBase: ${{ parameters.p_azAppBase }}
+              p_azDeployEnvironment: 'DEV'
+              p_vsBuildConfiguration: $(doBuildDebug)
+              p_doServiceConn: ${{ parameters.p_doServiceConnNonPRD }} 
+              p_azSubscriptionId: ${{ parameters.p_azSubscriptionIdNonPRD }}  
+              p_azTenantId: ${{ parameters.p_azTenantId }}
+              p_azDcRef: ${{ parameters.p_azDcRef }}
+              p_azDcLoc: ${{ parameters.p_azDcLoc }}
+              p_azTimeZoneWindows: $(p_azTimeZoneWindows)
+              p_azTimeZoneLinux: $(p_azTimeZoneLinux)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# RELEASE PRD
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- stage: Deploy_PRD
+  displayName: '${{ variables.doEnvironmentBase }} PRD Release'
+  dependsOn: Deploy_DEV
+  condition: and(succeeded(), eq(variables.isReleaseBranch, true))
+
+  jobs:
+  - deployment: DeployAppServices
+    displayName: 'Top | Release Deploy Job PRD'
+    environment: '$(doEnvironmentBase) PRD'
+    pool:
+      vmImage: $(doAgent)
+
+    strategy:
+      runOnce:
+        deploy:
+
+          steps:
+          - template: azure-pipelines-release.yaml
+            parameters: 
+              p_azAppBase: ${{ parameters.p_azAppBase }}
+              p_azDeployEnvironment: 'PRD'
+              p_vsBuildConfiguration: $(doBuildRelease)
+              p_doServiceConn: ${{ parameters.doServiceConnPRD }}
+              p_azSubscriptionId: ${{ parameters.p_azSubscriptionIdPRD }}
+              p_azTenantId: ${{ parameters.p_azTenantId }}
+              p_azDcRef: ${{ parameters.p_azDcRef }}
+              p_azDcLoc: ${{ parameters.p_azDcLoc }}
+              p_azTimeZoneWindows: ${{ parameters.p_azTimeZoneWindows }}
+              p_azTimeZoneLinux: ${{ parameters.p_azTimeZoneLinux }}
+# ~End~

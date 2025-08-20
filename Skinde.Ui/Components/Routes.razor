@@ -1,0 +1,53 @@
+﻿<CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            @if (NavManager.Uri.EndsWith(Utility.Constants.Navigation.LogoutPage, StringComparison.OrdinalIgnoreCase))
+            {
+                <!-- Allow anonymous access to the Logout page -->
+                <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(AnonymousLayout)" />
+            }
+            else
+            {
+                <AuthorizeView Policy="SystemAdminAccess">
+                    <Authorized>
+                        <CascadingValue Value="routeData">
+                            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
+                        </CascadingValue>
+                    </Authorized>
+                    <NotAuthorized>
+                        <MudPaper Elevation="3" Class="pa-6 mx-auto" Style="max-width: 500px;">
+                            <MudStack Spacing="2">
+                                <MudText Typo="Typo.h4" Color="Color.Error" Align="Align.Center">
+                                    Insufficient Access Permission
+                                </MudText>
+                                <MudText Typo="Typo.body1" Color="Color.Secondary">
+                                    Oops! It looks like you do not have the right permission to access this product.
+                                    Please contact your administrator for help and once access is confirmed, click the <strong>logout</strong> button below,
+                                    and re-browse to this application via the web address
+                                    <MudLink Href="@BaseUrl" Target="_blank">@BaseUrl</MudLink> to re-login.
+                                </MudText>
+                                <MudText Typo="Typo.caption">
+                                    Suggestion: It may be useful to copy and paste this web address if not already saved in your bookmarks or favorites.
+                                </MudText>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Logout">
+                                    Logout
+                                </MudButton>
+                            </MudStack>
+                        </MudPaper>
+                    </NotAuthorized>
+                </AuthorizeView>
+            }
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+    </Router>
+</CascadingAuthenticationState>
+
+@code {
+    [Inject] private NavigationManager NavManager { get; set; } = null!;
+    private string BaseUrl => NavManager.BaseUri.TrimEnd('/');
+
+    private void Logout()
+    {
+        NavManager.NavigateTo(Utility.Constants.Navigation.LogoutPage, true);
+    }
+}

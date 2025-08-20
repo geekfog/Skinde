@@ -1,0 +1,104 @@
+@using Skinde.Client.Kinde
+
+<div id="mudRoleDataGrid">
+    @if (Roles == null)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <MudDataGrid T="Role" Items="@FilteredRoles" ColumnResizeMode="@(ResizeMode.None)" Filterable="true" FilterMode="@DataGridFilterMode.Simple" QuickFilter="@QuickFilter" Hover="true" Class="mud-table-custom" RowClick="OnRowClick" SelectedItemChanged="OnSelectedRoleChanged" SelectedItem="@SelectedRole">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Roles</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="SearchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" ShrinkLabel="true" />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Name" />
+                <PropertyColumn Property="x => x.Key" Title="Key" />
+                <PropertyColumn Property="x => x.Description" Title="Description" />
+                <TemplateColumn Title="Default" SortBy="@(x => x.IsDefault ? 1 : 0)" Sortable="true">
+                    <CellTemplate>
+                        @if (context.Item.IsDefault)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="x => x.Id" Title="Id" />
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="Role" />
+            </PagerContent>
+        </MudDataGrid>
+    }
+</div>
+
+<div style="padding-bottom:10px;"></div>
+
+@if (SelectedRole != null)
+{
+    <div class="mt-4">
+        <MudText Typo="Typo.h6"><strong>@SelectedRole.Name</strong> (@SelectedRole.Key) Assignments</MudText>
+        <UserDataGrid Users="@UsersInSelectedRole" />
+    </div>
+}
+
+@code {
+    [Parameter]
+    public List<Role>? Roles { get; set; }
+
+    [Parameter]
+    public List<User>? Users { get; set; }
+
+    private string? SearchString { get; set; }
+    private Role? SelectedRole { get; set; }
+
+    private List<User> UsersInSelectedRole
+    {
+        get
+        {
+            if (SelectedRole?.Id == null || Users == null)
+                return [];
+
+            var usersAssignedToRole = Users.Where(u => u.Roles.Contains(SelectedRole.Id)).ToList();
+            return usersAssignedToRole;
+        }
+    }
+
+    private List<User> UsersInSelectedRole2 =>
+        SelectedRole?.Id == null || Users == null
+            ? []
+            : Users.Where(u => u.Roles.Contains(SelectedRole.Id)).ToList();
+
+    private List<Role> FilteredRoles => ApplyFilters();
+
+    private void OnRowClick(DataGridRowClickEventArgs<Role> args)
+    {
+        SelectedRole = args.Item;
+    }
+
+    private void OnSelectedRoleChanged(Role? role)
+    {
+        SelectedRole = role;
+    }
+
+    private List<Role> ApplyFilters()
+    {
+        var filtered = Roles;
+
+        if (!string.IsNullOrWhiteSpace(SearchString))
+        {
+            filtered = filtered?.Where(x =>
+                (x.Name != null && x.Name.Contains(SearchString, StringComparison.OrdinalIgnoreCase)) ||
+                (x.Key != null && x.Key.Contains(SearchString, StringComparison.OrdinalIgnoreCase)) ||
+                (x.Description != null && x.Description.Contains(SearchString, StringComparison.OrdinalIgnoreCase)) ||
+                (x.Id != null && x.Id.Contains(SearchString, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+        return filtered ?? [];
+    }
+
+    private Func<Role, bool> QuickFilter => _ => true;
+}

@@ -1,0 +1,128 @@
+﻿@page "/organizationentry"
+@inject Skinde.Client.KindeService KindeService
+@inject NavigationManager Navigation
+@using Enum;
+
+<MudCard Class="mb-4">
+    <MudCardHeader>
+        <MudText Typo="Typo.h6">Organization</MudText>
+    </MudCardHeader>
+    <MudCardContent>
+        @if (organization == null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudTextField @bind-Value="organization.Name" Label="Name" Disabled="Mode == EntryMode.View" ShrinkLabel="true" />
+            <MudTextField @bind-Value="organization.Handle" Label="Handle" Disabled="Mode == EntryMode.View" ShrinkLabel="true" />
+            <MudTextField @bind-Value="organization.ExternalId" Label="External ID" Disabled="Mode == EntryMode.View" ShrinkLabel="true" />
+
+            @if (Mode is EntryMode.Edit or EntryMode.View)
+            {
+                <MudTextField @bind-Value="organization.Code" Label="Code" Disabled="true" />
+                <MudDatePicker @bind-Date="organization.Created" Label="Created On" Disabled="true" />
+            }
+
+            <MudCheckBox T="bool" Label="Auto Membership Allowed when Org Code supplied during authentication" @bind-Value="organization.IsAutoMemberShipEnabled" Disabled="Mode == EntryMode.View" />
+
+            @if (Mode == EntryMode.Edit || Mode == EntryMode.New)
+            {
+                <MudButton Class="mud-button-default" OnClick="SaveChanges" Variant="Variant.Filled" Color="Color.Default">Save</MudButton>
+                <MudButton Class="mud-button-default" OnClick="CancelChanges" Variant="Variant.Filled" Color="Color.Default">Cancel</MudButton>
+            }
+
+            @if (Mode == EntryMode.View)
+            {
+                <MudButton Class="mud-button-default" OnClick="Edit" Variant="Variant.Filled" Color="Color.Default">Edit Organization</MudButton>
+                <MudButton Class="mud-button-default" OnClick="NavigateToOrganizations" Variant="Variant.Filled" Color="Color.Default">Organizations List</MudButton>
+            }
+
+            @if (!string.IsNullOrEmpty(ResultMessage))
+            {
+                <MudText Typo="Typo.body2" Class="result-message">@ResultMessage</MudText>
+            }
+        }
+
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public Skinde.Client.Kinde.Organization? organization { get; set; }
+
+    private EntryMode Mode { get; set; } = EntryMode.View;
+    private string ResultMessage { get; set; } = string.Empty;
+    private bool ReadyToParameterSet = false;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReadyToParameterSet)
+        {
+            ReadyToParameterSet = true;
+        }
+        else
+        {
+            if (organization != null && string.IsNullOrEmpty(organization.Code))
+            {
+                //organization = new Kinde.Client.Kinde.Organization();
+                Mode = EntryMode.New;
+            }
+        }
+    }
+
+    private void Edit()
+    {
+        Mode = EntryMode.Edit;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (organization != null)
+        {
+            try
+            {
+                if (Mode == EntryMode.New)
+                {
+                    var result = await KindeService.AddOrganization(organization);
+                    Mode = EntryMode.View;
+                    DisplayResult(result, "added");
+                }
+                else if (Mode == EntryMode.Edit)
+                {
+                    var result = await KindeService.UpdateOrganization(organization);
+                    Mode = EntryMode.View;
+                    DisplayResult(result, "updated");
+                }
+            }
+            catch (Exception ex)
+            {
+                ResultMessage = $"Error: {ex.Message}";
+            }
+        }
+    }
+
+    private void CancelChanges()
+    {
+        if (Mode == EntryMode.New)
+            NavigateToOrganizations();
+        else
+            Navigation.NavigateTo(Navigation.Uri, forceLoad: true); // Reload the page (clear any visitor changes)
+    }
+
+    private void NavigateToOrganizations()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private void DisplayResult(Skinde.Client.Kinde.Response response, string action)
+    {
+        if (response.IsSuccessful)
+        {
+            var orgName = organization?.Name ?? "(Unknown)";
+            ResultMessage = $"Organization '{orgName}' {action} successfully.";
+            return;
+        }
+        ResultMessage = $"Error Encountered: {response.Message}";
+    }
+}

@@ -1,0 +1,58 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject IUserService UserService
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <MudMenu AnchorOrigin="@Origin.BottomRight" TransformOrigin="@Origin.TopRight">
+                <ActivatorContent>
+                    <MudAvatar Color="Color.Default">@AvatarInitials</MudAvatar>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem OnClick="NavigateToSettings">Settings</MudMenuItem>
+                    <MudDivider DividerType="DividerType.FullWidth"/>
+                    <MudMenuItem OnClick="Logout">Logout</MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    public string AvatarInitials { get; set; } = String.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        AvatarInitials = await UserService.GetInitialsAsync();
+    }
+
+    private void NavigateToSettings()
+    {
+        Navigation.NavigateTo("/settings");
+    }
+
+    private void Logout()
+    {
+        Navigation.NavigateTo("/logout", true); // true is required for HttpContext to be available in Logout.razor
+    }
+}

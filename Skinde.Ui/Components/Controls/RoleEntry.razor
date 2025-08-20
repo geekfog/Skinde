@@ -1,0 +1,145 @@
+﻿@inject Client.KindeService KindeService
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<MudCard Class="mb-4">
+    <MudCardHeader>
+        <MudText Typo="Typo.h6">Roles</MudText>
+    </MudCardHeader>
+    <MudCardContent>
+        @if (User == null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else if (_allRoles.Count == 0)
+        {
+            <p>No Roles Available.</p>
+        }
+        else if (User != null && !string.IsNullOrEmpty(User.Id)) // make sure not in new user mode
+        {
+            if (_assignedOrganizations == null || _assignedOrganizations.Count == 0)
+            {
+                <p>Must assign user to at least one organization to assign roles.</p>
+            }
+            else
+            {
+                <MudSelect T="string" Label="Select Organization" Value="_selectedOrganizationCode" ValueChanged="OrganizationChange" Disabled="@(_hasChanged)">
+                    @foreach (var org in _assignedOrganizations)
+                    {
+                        <MudSelectItem T="string" Value="@org.Code">@org.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                <div class="checked-grid">
+                    @foreach (var role in _allRoles)
+                    {
+                        if (!string.IsNullOrEmpty(role.Id))
+                        {
+                            <MudCheckBox T="bool" Label="@role.Name" Tag="@role.Id" Value="@IsRoleAssigned(role.Id)" ValueChanged="@(isChecked => OnRoleChanged(isChecked, role.Id))" />
+                        }
+                    }
+                </div>
+                <MudButton Disabled="@(!_hasChanged)" OnClick="AssignRoles" Variant="Variant.Filled" Color="Color.Default">Assign</MudButton>
+                <MudButton Disabled="@(!_hasChanged)" OnClick="ResetChanges" Variant="Variant.Filled" Color="Color.Default">Reset</MudButton>                
+            }
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public Client.Kinde.User? User { get; set; }
+
+    private List<Client.Kinde.Organization>? _assignedOrganizations;
+    private string? _selectedOrganizationCode;
+
+    private List<Client.Kinde.Role> _allRoles = [];
+    private List<string> _assignedRoles = [];
+    private List<string> _initialAssignedRoles = [];
+    private bool _hasChanged = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (User == null) return;
+        _assignedOrganizations = await KindeService.GetUserOrganizations(User);
+
+        _allRoles = await KindeService.GetRoles();
+        var excludedRoles = Configuration["ExcludeRoles"]?.Split(',').Select(r => r.Trim()).ToList() ?? [];
+        _allRoles = _allRoles.Where(role => role.Key != null && !excludedRoles.Contains(role.Key)).ToList();
+
+        _selectedOrganizationCode = _assignedOrganizations?.FirstOrDefault()?.Code;
+        await UpdateAssignedRoles();
+    }
+
+    private bool IsRoleAssigned(string roleId) => _assignedRoles.Contains(roleId);
+
+    private void OnRoleChanged(bool isChecked, string roleId)
+    {
+        if (isChecked)
+        {
+            if (!_assignedRoles.Contains(roleId))
+                _assignedRoles.Add(roleId);
+        }
+        else
+        {
+            _assignedRoles.Remove(roleId);
+        }
+        _hasChanged = !_assignedRoles.SequenceEqual(_initialAssignedRoles);
+    }
+
+    private async Task AssignRoles()
+    {
+        if (User == null || _allRoles.Count == 0) return;
+
+        var rolesToAdd = _assignedRoles.Except(_initialAssignedRoles).ToList();
+        var rolesToRemove = _initialAssignedRoles.Except(_assignedRoles).ToList();
+
+        foreach (var roleId in rolesToAdd)
+        {
+            var role = _allRoles.FirstOrDefault(r => r.Id == roleId);
+            if (role != null)
+                await KindeService.ManageUserRole(User, _selectedOrganizationCode, role);
+        }
+
+        foreach (var roleId in rolesToRemove)
+        {
+            var role = _allRoles.FirstOrDefault(r => r.Id == roleId);
+            if (role != null)
+                await KindeService.ManageUserRole(User, _selectedOrganizationCode, role, true);
+        }
+
+        _initialAssignedRoles = new List<string>(_assignedRoles);
+        _hasChanged = false;
+    }
+
+    private void ResetChanges()
+    {
+        _assignedRoles = new List<string>(_initialAssignedRoles);
+        _hasChanged = false;
+    }
+
+    private async Task OrganizationChange(string organizationCode)
+    {
+        _selectedOrganizationCode = organizationCode;
+        await UpdateAssignedRoles();
+    }
+
+    private async Task UpdateAssignedRoles()
+    {
+        if (User?.Id == null || string.IsNullOrEmpty(_selectedOrganizationCode)) 
+            return;
+
+        var userRoles = await KindeService.GetUserRoles(User.Id, _selectedOrganizationCode);
+        if (userRoles.Count > 0)
+        {
+            _assignedRoles = userRoles.Where(r => r.Id != null).Select(r => r.Id!).ToList();
+            _initialAssignedRoles = new List<string>(_assignedRoles);
+        }
+        else
+        {
+            _assignedRoles.Clear();
+            _initialAssignedRoles.Clear();
+        }
+        _hasChanged = false;
+        StateHasChanged();
+    }
+}

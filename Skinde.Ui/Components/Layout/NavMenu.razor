@@ -1,0 +1,45 @@
+@inject IWebHostEnvironment Env
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href=""><img src="Images/favicon-0128.png" alt="Logo" style="max-width:64px; max-height:64px;"/>&nbsp;
+        <span class="navbar-product-name">Kinde</span></a>&nbsp;
+        <span class="navbar-env">@Env.EnvironmentName</span>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-building-nav-menu" aria-hidden="true"></span> Organizations
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="users">
+                <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Users
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="roles">
+                <span class="bi bi-patch-check-fill-nav-menu" aria-hidden="true"></span> Roles
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="settings">
+                <span class="bi bi-setting-nav-fill-menu" aria-hidden="true"></span> Settings
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="help">
+                <span class="bi bi-question-diamond-fill-nav-menu" aria-hidden="true"></span> Information
+            </NavLink>
+        </div>
+    </nav>
+</div>

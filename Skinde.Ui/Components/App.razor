@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap&v=@AppVersion" />
+    <link rel="stylesheet" href="_content/MudBlazor/MudBlazor.min.css?v=@AppVersion" />
+    <link rel="stylesheet" href="Skinde.Ui.styles.css?v=@AppVersion" /> @* Generated from razor.css components (such as MainLayout.razor) *@
+    <link rel="stylesheet" href="app.min.css?v=@AppVersion" />
+    <link rel="icon" type="image/png" href="Images/favicon-0128.png?v=@AppVersion" />
+    
+    <HeadOutlet @rendermode="InteractiveServer" />
+</head>
+
+<body>
+<Routes @rendermode="InteractiveServer" />
+    <script src="_framework/blazor.web.js?v=@AppVersion"></script>
+<script src="_content/MudBlazor/MudBlazor.min.js?v=@AppVersion"></script>
+</body>
+
+</html>
+
+@code {
+    private static readonly string? AppVersion = typeof(App).Assembly.GetName().Version?.ToString();
+}

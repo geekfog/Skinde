@@ -1,0 +1,72 @@
+﻿@inject Skinde.Client.KindeService KindeService
+
+<MudDialog>
+    <TitleContent>
+        User MFA
+    </TitleContent>
+    <DialogContent>
+        @if (Mfa != null)
+        {
+            <MudTextField @bind-Value="Mfa.Type" Label="Type" Disabled="true" ShrinkLabel="true" />
+            <MudTextField @bind-Value="Mfa.Name" Label="Reference Name" Disabled="true" ShrinkLabel="true" />
+            <MudTextField @bind-Value="Mfa.UsageCount" Label="Usage Count" Disabled="true" ShrinkLabel="true" />
+            <MudDatePicker @bind-Date="Mfa.LastUsedOn" Label="Last Used on" Disabled="true" />
+            <MudDatePicker @bind-Date="Mfa.CreatedOn" Label="Created on" Disabled="true" />
+            <MudCheckBox Label="Verified" @bind-Value="Mfa.IsVerified" Disabled="true" />
+        }
+        else
+        {
+            <MudText Typo="Typo.body1">No MFA data available for user.</MudText>
+        }
+
+        @if (!string.IsNullOrEmpty(ResultMessage))
+        {
+            <MudText Typo="Typo.body2" Class="result-message">@ResultMessage</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <div style="margin-top:20px;">
+            <MudButton OnClick="Reset" Variant="Variant.Filled" Color="Color.Secondary" Disabled="@(Mfa?.Id == null)">Reset</MudButton>
+            <MudButton OnClick="Cancel" Variant="Variant.Filled" Color="Color.Default">@(Mfa?.Id == null ? "Close" : "Cancel")</MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public Skinde.Client.Kinde.User? User { get; set; }
+
+    private Skinde.Client.Kinde.UserMfa? Mfa { get; set; }
+    private string ResultMessage { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()  
+    {
+        if (!string.IsNullOrEmpty(User?.Id))
+            Mfa = await KindeService.GetUserMfa(User.Id);
+    }
+
+    private async Task Reset()
+    {
+        if (string.IsNullOrEmpty(User?.Id) || string.IsNullOrEmpty(Mfa?.Id)) return;
+
+        var response = await KindeService.ResetUserMfa(User.Id, Mfa.Id);
+
+        if (response.IsSuccessful)
+        {
+            ResultMessage = "MFA reset successfully.";
+            Mfa = null;
+        }
+        else
+        {
+            ResultMessage = response.Message ?? "Unable to get the MFA reset response.";
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+}

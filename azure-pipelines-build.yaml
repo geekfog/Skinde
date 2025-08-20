@@ -1,0 +1,52 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Azure Pipelines YAML script
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Called by: azure-pipelines.yaml
+
+parameters:
+  p_vsBuildEnvironment: 'Debug'
+  p_runUnitTests: false
+
+steps:
+# ~~~~~~~[Preparation]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- template: azure-pipelines-info.yaml
+
+- template: azure-pipelines-shared.yaml
+  parameters:
+    p_vsBuildEnvironment: ${{ parameters.p_vsBuildEnvironment }}
+
+# ~~~~~~~[Builds]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- script: dotnet publish $(doWebProject)/$(doWebProject).csproj --configuration ${{ parameters.p_vsBuildEnvironment }} --output $(doPublishDirectory)/$(doWebProject)/${{ parameters.p_vsBuildEnvironment }}
+  displayName: 'Bld | WEB ${{ parameters.p_vsBuildEnvironment }} Project $(doWebProject)'
+
+# ~~~~~~~[Tests]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- task: DotNetCoreCLI@2
+  displayName: 'Bld | All ${{ parameters.p_vsBuildEnvironment }} Unit Tests'
+  inputs:
+    command: test
+    projects: '**/*Tests/*.csproj'
+    arguments: '--configuration ${{ parameters.p_vsBuildEnvironment }}'
+  condition: ${{ parameters.p_runUnitTests }}
+      
+# ~~~~~~~[Display]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- task: PowerShell@2
+  displayName: 'Bld | All ${{ parameters.p_vsBuildEnvironment }} Publish Folder Contents'
+  inputs:
+    targetType: inline
+    script: |
+      Get-ChildItem "$(doPublishDirectory)" -Recurse | Format-Table
+      Exit 0 
+  condition: and(succeeded(), eq(variables['isDebug'], 'true'))
+
+# ~~~~~~~[Archive]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- task: ArchiveFiles@2
+  displayName: 'Bld | WEB ${{ parameters.p_vsBuildEnvironment }} Files to Zip'
+  inputs:
+    rootFolderOrFile: '$(doPublishDirectory)/$(doWebProject)/${{ parameters.p_vsBuildEnvironment }}'
+    includeRootFolder: false
+    archiveType: zip
+    archiveFile: $(Build.ArtifactStagingDirectory)/$(doWebPackage).zip
+    replaceExistingArchive: true
+    verbose: $(isDebug)
+  
+# ~End~

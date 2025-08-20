@@ -1,0 +1,66 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skinde.Ui", "Skinde.Ui\Skinde.Ui.csproj", "{513AE209-8E7B-43A0-9620-57475F3F8161}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skinde.Client", "Skinde.Client\Skinde.Client.csproj", "{2494F2F0-6159-454F-AADE-48600237487C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skinde.Utility", "Skinde.Utility\Skinde.Utility.csproj", "{606ED9B0-D20B-44F3-9F43-7FC47A7C705D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{84662CD3-14EC-4776-AADB-D3EBD14E07AE}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		azure-arm-akv.bicep = azure-arm-akv.bicep
+		azure-arm.bicep = azure-arm.bicep
+		azure-pipelines-build.yaml = azure-pipelines-build.yaml
+		azure-pipelines-info.yaml = azure-pipelines-info.yaml
+		azure-pipelines-release.yaml = azure-pipelines-release.yaml
+		azure-pipelines-shared.yaml = azure-pipelines-shared.yaml
+		azure-pipelines.yaml = azure-pipelines.yaml
+		Directory.Build.props = Directory.Build.props
+		LICENSE.txt = LICENSE.txt
+		nuget.config = nuget.config
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skinde.Tests", "Skinde.Tests\Skinde.Tests.csproj", "{7858971B-5239-47E7-B4D7-9F9E7B0EC2F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skinde.Build", "Skinde.Build\Skinde.Build.csproj", "{3A600009-9588-4AC1-80BC-249ABA5C3775}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{513AE209-8E7B-43A0-9620-57475F3F8161}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{513AE209-8E7B-43A0-9620-57475F3F8161}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{513AE209-8E7B-43A0-9620-57475F3F8161}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{513AE209-8E7B-43A0-9620-57475F3F8161}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2494F2F0-6159-454F-AADE-48600237487C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2494F2F0-6159-454F-AADE-48600237487C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2494F2F0-6159-454F-AADE-48600237487C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2494F2F0-6159-454F-AADE-48600237487C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{606ED9B0-D20B-44F3-9F43-7FC47A7C705D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{606ED9B0-D20B-44F3-9F43-7FC47A7C705D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{606ED9B0-D20B-44F3-9F43-7FC47A7C705D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{606ED9B0-D20B-44F3-9F43-7FC47A7C705D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7858971B-5239-47E7-B4D7-9F9E7B0EC2F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7858971B-5239-47E7-B4D7-9F9E7B0EC2F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7858971B-5239-47E7-B4D7-9F9E7B0EC2F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7858971B-5239-47E7-B4D7-9F9E7B0EC2F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A600009-9588-4AC1-80BC-249ABA5C3775}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A600009-9588-4AC1-80BC-249ABA5C3775}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A600009-9588-4AC1-80BC-249ABA5C3775}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A600009-9588-4AC1-80BC-249ABA5C3775}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {588DF87D-7DA7-4CE1-BFDD-D33ED5A5180A}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,128 @@
+﻿@inject NavigationManager Navigation
+
+<div id="mudDataGrid">
+    @if (Users == null)
+    {
+        if (ShowPreloader)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+    }
+    else
+    {
+        <MudDataGrid T="Client.Kinde.User" Items="@FilteredUsers" ColumnResizeMode="@(ResizeMode.None)" Filterable="true" FilterMode="@DataGridFilterMode.Simple" QuickFilter="@QuickFilter" Hover="true" Class="mud-table-custom" RowClick="OnRowClick">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Users</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="SearchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" ShrinkLabel="true" />
+                <MudSpacer />
+                <MudCheckBox T="bool?" @bind-checked="ShowActive" TriState="true" Color="Color.Default" Label="Show Active" ValueChanged="OnShowActiveChanged" />
+                <MudButton Class="mud-button-default ml-6" OnClick="NavigateToNewUser" Variant="Variant.Filled" Color="Color.Default">New User</MudButton>
+            </ToolBarContent>
+            <Columns>
+                <TemplateColumn Title="Profile Image" Sortable="false">
+                    <CellTemplate>
+                        @if (!string.IsNullOrEmpty(context.Item.PictureUrl))
+                        {
+                            <img src="@context.Item.PictureUrl" alt="Profile Picture" style="max-width:32px; max-height:32px;"/>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="x => x.FirstName" Title="First Name" />
+                <PropertyColumn Property="x => x.LastName" Title="Last Name" />
+                <PropertyColumn Property="x => x.Email" Title="Email" />
+                <PropertyColumn Property="x => x.Id" />
+                <PropertyColumn Property="x=>x.Organizations.Count" Title="Org #" />
+                <TemplateColumn Title="Suspended" SortBy="@(x => x.IsSuspended ? 1 : 0)" Sortable="true">
+                    <CellTemplate>
+                        @if (context.Item.IsSuspended)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Error" />
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Last Login" Sortable="true" SortBy="@(x => x.LastLogin ?? DateTime.MinValue)">
+                    <CellTemplate>
+                        @if (context.Item.LastLogin.HasValue)
+                        {
+                            @context.Item.LastLogin.Value.ToString("g")
+                        }
+                        else
+                        {
+                            <em>Never</em>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="Client.Kinde.User" />
+            </PagerContent>
+        </MudDataGrid>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<Client.Kinde.User>? Users { get; set; }
+
+    [Parameter]
+    public string? OrganizationCode { get; set; }
+
+    [Parameter]
+    public bool ShowPreloader { get; set; } = true;
+
+    private string? SearchString { get; set; }
+    private bool? ShowActive { get; set; }
+    private List<Client.Kinde.User> FilteredUsers => ApplyFilters();
+
+    protected override void OnParametersSet()
+    {
+        Users = Users?.OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ThenBy(u => u.Email).ToList();
+    }
+
+    private void OnRowClick(DataGridRowClickEventArgs<Client.Kinde.User> args)
+    {
+        Navigation.NavigateTo($"/user/{args.Item.Id}");
+    }
+
+    private void OnShowActiveChanged(bool? value)
+    {
+        ShowActive = value;
+        StateHasChanged();
+    }
+
+    private void NavigateToNewUser()
+    {
+        var url = "/user";
+        if (!string.IsNullOrEmpty(OrganizationCode)) url += $"?OrganizationCode={OrganizationCode}";
+
+        Navigation.NavigateTo(url);
+    }
+
+    private List<Client.Kinde.User> ApplyFilters()
+    {
+        var filteredUsers = Users;
+
+        if (!string.IsNullOrWhiteSpace(SearchString))
+        {
+            filteredUsers = filteredUsers?.Where(x =>
+                (x.FirstName != null && x.FirstName.Contains(SearchString, StringComparison.OrdinalIgnoreCase)) ||
+                (x.LastName != null && x.LastName.Contains(SearchString, StringComparison.OrdinalIgnoreCase)) ||
+                (x.Email != null && x.Email.Contains(SearchString, StringComparison.OrdinalIgnoreCase)) ||
+                (x.Id != null && x.Id.Contains(SearchString, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+        if (ShowActive.HasValue)
+        {
+            filteredUsers = filteredUsers?.Where(x =>
+                (ShowActive.Value && !x.IsSuspended) ||
+                (!ShowActive.Value && x.IsSuspended)
+            ).ToList();
+        }
+
+        return filteredUsers ?? [];
+    }
+
+    private Func<Client.Kinde.User, bool> QuickFilter => _ => true;
+}

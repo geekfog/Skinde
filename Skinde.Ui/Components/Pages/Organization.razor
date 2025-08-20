@@ -1,0 +1,44 @@
+﻿@page "/organization/{organizationCode?}"
+@inject Skinde.Client.KindeService KindeService
+@inject NavigationManager Navigation
+
+<Title Name="Organization" />
+
+<OrganizationEntry Organization="@_organization" />
+
+<UserDataGrid Users="@_users" OrganizationCode="@_organization?.Code" ShowPreloader="@_showPreloader" />
+
+@code {
+    [Parameter]
+    public string? OrganizationCode { get; set; }
+
+    private Skinde.Client.Kinde.Organization? _organization;
+    private List<Skinde.Client.Kinde.User>? _users;
+    private bool _showPreloader = true;
+
+    public bool IsAutoMemberShipEnabled
+    {
+        get => _organization?.IsAutoMemberShipEnabled ?? false;
+        set { if (_organization != null) _organization.IsAutoMemberShipEnabled = value; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (OrganizationCode != null)
+            {
+                _organization = await KindeService.GetOrganization(OrganizationCode);
+                _users = await KindeService.GetUsers(); // <- This gives more detail but requires filtering versus -> users = await KindeService.GetOrganizationUsers(OrganizationCode);
+                if (_users != null && OrganizationCode != null)
+                    _users = _users.Where(x => x.Organizations.Contains(OrganizationCode)).ToList();
+            }
+            else 
+            {
+                _organization = new Skinde.Client.Kinde.Organization();
+                _showPreloader = false;
+            }
+            StateHasChanged();
+        }
+    }
+}

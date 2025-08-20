@@ -1,0 +1,28 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Azure Pipelines YAML script
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Called by:
+#   azure-pipelines-build.yaml
+#   azure-pipelines-release.yaml
+
+parameters:
+  p_vsBuildEnvironment: 'DEV'
+
+steps:
+- task: PowerShell@2
+  displayName: 'Shr | Set Azure DevOps Package Variables ${{ parameters.p_vsBuildEnvironment }}'
+  inputs:
+    targetType: inline
+    script: |
+      $buildEnv = "${{ parameters.p_vsBuildEnvironment }}".ToLower()
+      Write-Host "##vso[task.setvariable variable=doWebPackage;]$(doWebProject)-$buildEnv-$(Build.BuildId).zip"
+
+- task: PowerShell@2
+  displayName: 'Shr | Display Azure DevOps Package Variables'
+  inputs:
+    targetType: inline
+    script: |
+      Write-Host "doWebPackage: $(doWebPackage)"
+  condition: and(succeeded(), eq(variables['isDebug'], 'true'))
+
+# ~End~

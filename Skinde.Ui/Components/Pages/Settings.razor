@@ -1,0 +1,29 @@
+﻿@page "/settings"
+@using System.Reflection
+
+<Title Name="Settings" />
+<h1>Settings</h1>
+
+<div>
+    <p><strong>Version:</strong> @version</p>
+    <p><strong>Authors:</strong> @authors</p>
+    <p><strong>Company:</strong> @company</p>
+    <p><strong>Description:</strong> @description</p>
+</div>
+
+@code {
+    private string version = string.Empty;
+    private string authors = string.Empty;
+    private string company = string.Empty;
+    private string description = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        var assembly = typeof(Settings).Assembly;
+
+        version = assembly.GetName().Version?.ToString() ?? "N/A";
+        authors = assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "Authors")?.Value ?? "N/A";
+        company = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "N/A";
+        description = assembly.GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description ?? "N/A";
+    }
+}

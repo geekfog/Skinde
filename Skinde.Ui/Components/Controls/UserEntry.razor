@@ -1,0 +1,212 @@
+﻿@inject Skinde.Client.KindeService KindeService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@using Enum
+@using System.Text.RegularExpressions
+
+<MudCard Class="mb-4">
+    <MudCardHeader>
+        <MudText Typo="Typo.h6">User</MudText>
+    </MudCardHeader>
+    <MudCardContent>
+        @if (User == null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudTextField @bind-Value="User.FirstName" Label="First Name" Disabled="Mode == EntryMode.View" Required="true" ShrinkLabel="true" />
+            <MudTextField @bind-Value="User.LastName" Label="Last Name" Disabled="Mode == EntryMode.View" Required="true" ShrinkLabel="true" />
+            <MudTextField @bind-Value="User.Email" Label="Email" Disabled="Mode == EntryMode.View" Required="true" ShrinkLabel="true" />
+            <MudTextField @bind-Value="User.Phone" Label="Phone" Disabled="Mode == EntryMode.View" ShrinkLabel="true" />
+            <MudTextField @bind-Value="User.Username" Label="Username" Disabled="Mode == EntryMode.View" ShrinkLabel="true" />
+
+            @if (Mode is EntryMode.Edit or EntryMode.View)
+            {
+                <MudTextField @bind-Value="User.Id" Label="Id" Disabled="true" />
+                <MudTextField @bind-Value="User.TotalLogins" Label="Total Logins" Disabled="true" ShrinkLabel="true" />
+                <MudTextField @bind-Value="User.FailedLogins" Label="Failed Logins" Disabled="true" ShrinkLabel="true" />
+                <MudDatePicker @bind-Date="User.LastLogin" Label="Last Login" Disabled="true" ShrinkLabel="true" />
+                <MudDatePicker @bind-Date="User.Created" Label="Created On" Disabled="true" />
+            }
+
+            @if (Mode != EntryMode.New)
+            {
+                <MudStack Row="true" Spacing="2">
+                    <MudCheckBox Label="Suspended" @bind-Value="User.IsSuspended" Disabled="Mode == EntryMode.View" />
+                    <MudCheckBox Label="Password Reset Requested" @bind-Value="User.IsPasswordResetRequested" Disabled="Mode != EntryMode.Edit" />
+                </MudStack>
+            }
+
+            @if (Mode == EntryMode.Edit || Mode == EntryMode.New)
+            {
+                <MudButton Class="mud-button-default" OnClick="SaveChanges" Variant="Variant.Filled" Color="Color.Default">Save</MudButton>
+                <MudButton Class="mud-button-default" OnClick="CancelChanges" Variant="Variant.Filled" Color="Color.Default">Cancel</MudButton>
+            }
+
+            @if (Mode == EntryMode.View)
+            {
+                <MudButton Class="mud-button-default" OnClick="Edit" Variant="Variant.Filled" Color="Color.Default">Edit User</MudButton>
+                <MudButton Class="mud-button-default" OnClick="AssignOrganizations" Variant="Variant.Filled" Color="Color.Default">Assign Organizations</MudButton>
+                <MudButton Class="mud-button-default" OnClick="ViewMfa" Variant="Variant.Filled" Color="Color.Default">MFA</MudButton>
+                <MudButton Class="mud-button-default" OnClick="NavigateToUsers" Variant="Variant.Filled" Color="Color.Default">User List</MudButton>
+            }
+
+            @if (!string.IsNullOrEmpty(ResultMessage))
+            {
+                <MudText Typo="Typo.body2" Class="result-message">@ResultMessage</MudText>
+            }
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public Skinde.Client.Kinde.User? User { get; set; }
+
+    [SupplyParameterFromQuery(Name = $"{nameof(OrganizationCode)}")]
+    public string? OrganizationCode { get; set; }
+
+    private EntryMode Mode { get; set; } = EntryMode.View;
+    private string ResultMessage { get; set; } = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (User != null && string.IsNullOrEmpty(User.Id))
+            Mode = EntryMode.New;
+    }
+
+    private void Edit()
+    {
+        Mode = EntryMode.Edit;
+    }
+
+    private bool ValidUserInformation()
+    {
+        var validationRules = new Dictionary<Func<bool>, string>
+        {
+            { () => string.IsNullOrEmpty(User?.FirstName), "First Name is required." },
+            { () => string.IsNullOrEmpty(User?.LastName), "Last Name is required." },
+            { () => string.IsNullOrEmpty(User?.Email), "Email is required." },
+            { () => !IsValidEmail(User?.Email), "Invalid email format." },
+            { () => !string.IsNullOrEmpty(User?.Phone) && !IsValidPhone(User?.Phone), "Invalid phone format." }
+        };
+
+        foreach (var rule in validationRules)
+        {
+            if (rule.Key())
+            {
+                ResultMessage = rule.Value;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (User == null || !ValidUserInformation())
+            return;
+
+        try
+        {
+            if (Mode == EntryMode.New)
+            {
+                if (!string.IsNullOrEmpty(OrganizationCode))
+                    User.Organizations.Add(OrganizationCode);
+
+                var result = await KindeService.AddUser(User);
+                if (result != null && result.IsCreated)
+                {
+                    ResultMessage = $"User '{User.Email}' added successfully.";
+                    Mode = EntryMode.View;
+                    NavigateToReload(result.Id);
+                    return;
+                }
+
+                ResultMessage = $"Unable to add user: Unknown Error Encountered.";
+            }
+            else if (Mode == EntryMode.Edit)
+            {
+                var result = await KindeService.UpdateUser(User);
+                if (result != null)
+                {
+                    ResultMessage = $"User '{result.Email}' updated successfully.";
+                    Mode = EntryMode.View;
+                    return;
+                }
+
+                ResultMessage = $"Unable to update user: Unknown Error Encountered.";
+            }
+
+        }
+        catch (Exception ex)
+        {
+            ResultMessage = $"Error: {ex.Message}";
+        }
+    }
+
+    private void CancelChanges()
+    {
+        if (Mode == EntryMode.New)
+            NavigateToUsers();
+        else
+            NavigateToReload();
+    }
+
+    private void NavigateToReload()
+    {
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true); // Reload the page (clear any visitor changes)
+    }
+
+    private void NavigateToReload(string? userId)
+    {
+        var uri = new Uri(Navigation.Uri);
+        var baseUri = uri.GetLeftPart(UriPartial.Path);
+        var newUri = $"{baseUri}/{userId}";
+        Navigation.NavigateTo(newUri, forceLoad: true);
+    }
+
+    private void NavigateToUsers()
+    {
+        Navigation.NavigateTo("/users");
+    }
+
+    private async Task AssignOrganizations()
+    {
+        var parameters = new DialogParameters<AssignOrganizationsDialog> { { p => p.User, User } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, BackgroundClass="dialog-background" };
+        var dialog = await DialogService.ShowAsync<AssignOrganizationsDialog>("Assign Organizations", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result?.Canceled ?? false) // Was save done?
+            NavigateToReload();
+    }
+
+    private async Task ViewMfa()
+    {
+        var parameters = new DialogParameters<UserMfaDialog> { { p => p.User, User } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, BackgroundClass = "dialog-background" };
+        var dialog = await DialogService.ShowAsync<UserMfaDialog>("Multifactor Authentication", parameters, options);
+        await dialog.Result;
+    }
+
+    private bool IsValidEmail(string? email)
+    {
+        if (string.IsNullOrEmpty(email))
+            return false;
+
+        var emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+        return Regex.IsMatch(email, emailPattern);
+    }
+
+    private bool IsValidPhone(string? phone)
+    {
+        if (string.IsNullOrEmpty(phone))
+            return false;
+
+        var phonePattern = @"^\d+$"; // @"^\+?[1-9]\d{1,14}$"
+        return Regex.IsMatch(phone, phonePattern);
+    }
+}

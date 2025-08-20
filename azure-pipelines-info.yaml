@@ -1,0 +1,47 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Azure Pipelines YAML script
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Called by:
+#   azure-pipelines-build.yaml
+#   azure-pipelines-release.yaml
+
+steps:
+- task: PowerShell@2
+  displayName: 'Inf | Approvers'
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+  inputs:
+    targetType: inline
+    script: |
+      $headers = @{
+        Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN"
+      }
+
+      $uri = "{0}/{1}/_apis/pipelines/approvals?`$expand=steps&api-version=7.1" -f $env:SYSTEM_COLLECTIONURI, $env:SYSTEM_TEAMPROJECTID
+
+      Write-Host "Approvals URL: $uri"
+      Write-Host "Build Id : $($env:BUILD_BUILDID)"
+      Write-Host ""
+
+      $response = Invoke-RestMethod -Uri $uri -Method 'Get' -Headers $headers
+
+      # Entire set of data
+      #Write-Host "Response: $($response | ConvertTo-Json -Depth 100)"
+      #Write-Host ""
+
+      # Just the approvals
+      $approvals = $response.value | Where-Object { $_.pipeline.owner.id -eq $env:BUILD_BUILDID }
+
+      # Just the approvals from the entire set of data
+      #Write-Host "Approvals: $($approvals | ConvertTo-Json -Depth 100)"
+      #Write-Host ""
+
+      $actualApprovers = $approvals.steps | Where-Object { $_.actualApprover } | ForEach-Object { $_.actualApprover.uniqueName }
+
+      foreach ($approver in $actualApprovers) {
+        Write-Host "Pipeline Approver: $approver"
+      }
+
+      Write-Host "Total Number of Approvers: $($actualApprovers.Count)"
+
+# ~End~

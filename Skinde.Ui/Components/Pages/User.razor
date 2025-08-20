@@ -1,0 +1,47 @@
+﻿@page "/user/{userId?}"
+@using Microsoft.AspNetCore.WebUtilities
+@inject Skinde.Client.KindeService KindeService
+@inject NavigationManager Navigation
+
+<Title Name="User" />
+
+<div class="columns-container">
+    <div class="left-column">
+        <UserEntry User="@user" />
+    </div>
+    <div class="right-column">
+        <RoleEntry User="@user"/>
+        <OrganizationDataGrid Organizations="@organizations" ShowPreloader="@(!string.IsNullOrEmpty(UserId))" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? UserId { get; set; }
+
+    private Skinde.Client.Kinde.User? user;
+    private List<Skinde.Client.Kinde.Organization>? organizations;
+
+    public bool IsSuspended
+    {
+        get => user?.IsSuspended ?? false;
+        set { if (user != null) user.IsSuspended = value; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (UserId != null)
+            {
+                user = await KindeService.GetUser(UserId);
+                organizations = await KindeService.GetUserOrganizations(user);
+            }
+            else 
+            {
+                user = new Skinde.Client.Kinde.User();
+            }
+            StateHasChanged();
+        }
+    }
+}

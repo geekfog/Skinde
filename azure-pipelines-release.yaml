@@ -1,0 +1,124 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Azure Pipelines YAML script
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Called by: azure-pipelines.yaml
+
+parameters:
+  p_azAppBase: # No default, required
+  p_azDeployEnvironment: 'DEV'
+  p_vsBuildEnvironment: 'DEV'
+  p_doServiceConn: # No default, required
+  p_azSubscriptionId: # No default, required
+  p_azTenantId: # No default, required
+  p_azDcRef: # No default, required
+  p_azDcLoc: # No default, required
+  p_azTimeZoneWindows: # No default, required
+  p_azTimeZoneLinux: # No default, required
+  p_azArmEnabled: true
+
+steps:
+- template: azure-pipelines-info.yaml
+
+- task: PowerShell@2
+  displayName: 'Rel | Artifact Folder Contents'
+  inputs:
+    targetType: inline
+    script: |
+      Get-ChildItem "$(Pipeline.Workspace)/$(doArtifactFolder)" -Recurse | Format-Table # Format-List
+      Exit 0 
+  condition: and(succeeded(), eq(variables['isDebug'], 'true'))
+
+- template: azure-pipelines-shared.yaml
+  parameters:
+    p_vsBuildEnvironment: ${{ parameters.p_vsBuildEnvironment }}
+
+- task: PowerShell@2
+  displayName: 'Rel | Set Azure Resources Naming Variables'
+  inputs:
+    targetType: inline
+    script: |
+      $deployEnv = "${{ parameters.p_azDeployEnvironment }}".ToLower()
+      # Avoid interpolation issues between PowerShell and YAML
+      $azResourceGroup = "${{ parameters.p_azAppBase }}" + $deployEnv + "${{ parameters.p_azDcRef }}" + "rg"
+      $azWebAppName = "${{ parameters.p_azAppBase }}" + $deployEnv + "${{ parameters.p_azDcRef }}" + "web"
+      $azAkvAppName = "${{ parameters.p_azAppBase }}" + $deployEnv + "${{ parameters.p_azDcRef }}" + "kv"
+      # Assign PowerShell values to YAML
+      Write-Host "##vso[task.setvariable variable=azResourceGroup]$azResourceGroup"
+      Write-Host "##vso[task.setvariable variable=azWebAppName;]$azWebAppName"
+      Write-Host "##vso[task.setvariable variable=azAkvAppName;]$azAkvAppName"
+
+- task: AzureKeyVault@2
+  displayName: 'Rel | Access Azure Key Vault'
+  inputs:
+    azureSubscription: ${{ parameters.p_doServiceConn }}
+    KeyVaultName: $(azAkvAppName)
+  condition: succeeded()
+  continueOnError: true # May not succeed the first time if the resource hasn't been created yet or security access assigned
+
+- task: PowerShell@2
+  displayName: 'Rel | Display Azure Resource Values'
+  inputs:
+    targetType: inline
+    script: |
+      Write-Host "Azure KeyVault Name:     $(azResourceGroup)"
+      Write-Host "Azure UI Web App Name:   $(azWebAppName)"
+      Write-Host "Azure KeyVault Name:     $(azAkvAppName)"
+  condition: and(succeeded(), eq(variables['isDebug'], 'true'))
+
+- task: AzurePowerShell@5
+  displayName: 'Rel | KeyVault Existence Check'
+  inputs:
+    azureSubscription: '${{ parameters.p_doServiceConn }}'
+    ScriptType: 'InlineScript'
+    Inline: |
+      try {
+        $kv = Get-AzKeyVault -VaultName $(azAkvAppName) -ResourceGroupName $(azResourceGroup) -ErrorAction Stop
+        if ($null -ne $kv) {
+          Write-Host "Azure KeyVault '$($kv.VaultUri)' exists in $($kv.Location)."
+          Write-Host "##vso[task.setvariable variable=v_keyvault_exists]true"
+        } else {
+          Write-Host "Azure KeyVault '$(azAkvAppName)' does not exist."
+          Write-Host "##vso[task.setvariable variable=v_keyvault_exists]false"
+        }
+      } catch {
+        Write-Host "Exception occurred: $($_.Exception.Message)"
+        Write-Host "Flagging Azure KeyVault '$(azAkvAppName)' as existing to avoid accidental configuration.
+        Write-Host "##vso[task.setvariable variable=v_keyvault_exists]true"
+      }
+    azurePowerShellVersion: 'LatestVersion'
+
+- task: AzureResourceManagerTemplateDeployment@3
+  displayName: 'Rel | Deploy ARM'
+  inputs:
+    deploymentScope: Resource Group
+    resourceGroupName: '$(azResourceGroup)'
+    subscriptionId: '${{ parameters.p_azSubscriptionId }}'
+    azureResourceManagerConnection: '${{ parameters.p_doServiceConn }}'
+    action: 'Create Or Update Resource Group'
+    location: '${{ parameters.p_azDcLoc }}'
+    overrideParameters: >
+      -p_resourcegroup $(azResourceGroup)
+      -p_deploy_environment ${{ parameters.p_azDeployEnvironment }}
+      -p_azure_tenant_id ${{ parameters.p_azTenantId }}
+      -p_appbasename ${{ parameters.p_azAppBase }}
+      -p_datacenter_reference ${{ parameters.p_azDcRef }}
+      -p_datacenter_location ${{ parameters.p_azDcLoc }}
+      -p_keyvault_exists $(v_keyvault_exists)
+      -p_azTimeZoneWindows ${{ parameters.p_azTimeZoneWindows }}
+      -p_azTimeZoneLinux ${{ parameters.p_azTimeZoneLinux }}
+      -p_commonTags $(azCommonTags)
+    templateLocation: 'Linked artifact'
+    csmFile: '$(Pipeline.Workspace)/$(doArtifactFolder)/$(azArmFile)'
+    deploymentMode: Incremental # Incremental, Complete, Validation
+  condition: and(succeeded(), eq(variables.azArmEnabled, 'true'))
+
+- task: AzureRmWebAppDeployment@4
+  displayName: 'Rel | Deploy WEB App (Linux)'
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: '${{ parameters.p_doServiceConn }}'
+    appType: 'webAppLinux'
+    WebAppName: '$(azWebAppName)'
+    packageForLinux: '$(Pipeline.Workspace)/$(doArtifactFolder)/$(doWebPackage).zip'
+
+# ~End~

@@ -1,0 +1,20 @@
+﻿@page "/logout"
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@layout AnonymousLayout
+
+<Title Name="Signed Out" />
+
+<p>You have been logged out of the system.</p>
+
+@code {
+    [CascadingParameter] 
+    private HttpContext HttpContext { get; set; } = default!; // must be statically-rendered as interactive rendering causes HttpContext to be null with .NET 8: https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-context?view=aspnetcore-8.0#ihttpcontextaccessorhttpcontext-in-razor-components-blazor
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // logout locally
+        await HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme); // logout of IdP (Kinde)
+    }
+}

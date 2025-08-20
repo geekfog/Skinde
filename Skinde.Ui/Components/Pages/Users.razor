@@ -1,0 +1,19 @@
+﻿@page "/users"
+@inject Client.KindeService KindeService
+
+<Title Name="Users" />
+
+<UserDataGrid Users="@_users" />
+
+@code {
+    private List<Skinde.Client.Kinde.User>? _users;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _users = await KindeService.GetUsers();
+            StateHasChanged();
+        }
+    }
+}

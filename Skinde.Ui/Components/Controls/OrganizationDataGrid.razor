@@ -1,0 +1,83 @@
+﻿@inject NavigationManager Navigation
+
+<div id="mudDataGrid">
+    @if (Organizations == null)
+    {
+        if (ShowPreloader)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+    }
+    else
+    {
+        <MudDataGrid T="Client.Kinde.Organization" Items="@Organizations" ColumnResizeMode="@(ResizeMode.None)" Filterable="true" FilterMode="@DataGridFilterMode.Simple" QuickFilter="@QuickFilter" Hover="true" Class="mud-table-custom" RowClick="OnRowClick">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Organizations</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="SearchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mud-textfield-default" ShrinkLabel="true" />
+                <MudSpacer />
+                <MudButton Class="mud-button-default" OnClick="NavigateToNewOrganization" Variant="Variant.Filled" Color="Color.Default">New Organization</MudButton>
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Name" />
+                <PropertyColumn Property="x => x.Code" />
+                <PropertyColumn Property="x => x.Handle" />
+                <TemplateColumn Title="Default" SortBy="@(x => (x.IsDefault ? 1 : 0))" Sortable="true">
+                    <CellTemplate>
+                        @if (context.Item.IsDefault)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Auto-Assignable" SortBy="@(x => (x.IsAutoMemberShipEnabled ? 1 : 0))" Sortable="true">
+                    <CellTemplate>
+                        @if (context.Item.IsAutoMemberShipEnabled)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="Client.Kinde.Organization" />
+            </PagerContent>
+        </MudDataGrid>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<Client.Kinde.Organization>? Organizations { get; set; }
+
+    [Parameter]
+    public bool ShowPreloader { get; set; } = true;
+
+    private string? SearchString { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        Organizations = Organizations?.OrderBy(o => o.Name).ToList();
+    }
+
+    private void OnRowClick(DataGridRowClickEventArgs<Client.Kinde.Organization> args)
+    {
+        Navigation.NavigateTo($"/organization/{args.Item.Code}");
+    }
+
+    private void NavigateToNewOrganization()
+    {
+        Navigation.NavigateTo("/organization");
+    }
+
+    private Func<Client.Kinde.Organization, bool> QuickFilter => x =>
+    {
+    if (string.IsNullOrWhiteSpace(SearchString))
+        return true;
+
+    if (x.Code != null && x.Code.Contains(SearchString, StringComparison.OrdinalIgnoreCase))
+        return true;
+
+    return x.Name != null && x.Name.Contains(SearchString, StringComparison.OrdinalIgnoreCase);
+    };
+}
