@@ -1,6 +1,5 @@
-# Skinde : Sub-Kinde Administration
-## Introduction
-<img src="images/favicon-0128.png" alt="favicon" style="zoom:80%; float:right;" />Skinde is an open source tool built on top of the Kinde OAuth2 SaaS platform. It offers a lightweight subset of Kinde's capabilities focused on secured delegation of user and organization management.
+# Introduction
+<img src="images/favicon-0128.png" alt="favicon" style="zoom:80%; float:right;" />Skinde (Sub-Kinde Administrator) is an open source tool built on top of the Kinde OAuth2 SaaS platform. It offers a lightweight subset of Kinde's capabilities focused on secured delegation of user and organization management.
 
 Key Features:
 
@@ -11,6 +10,8 @@ Key Features:
 - **Open Source**: Freely available for contribution, integration, and self-hosting. 
 
 Kinde leverages [Well-Known](https://localhost:7076/.well-known/openid-configuration) endpoint via the established OAuth2 standard.
+
+**Why is this being done?** To demonstrate technology capabilities, give back to the community, and take advantage of collaboration.
 
 # Licensing
 
@@ -219,6 +220,6 @@ Right now, this requires the use of a release branch when doing development. Add
 
 # Contributions
 
-- [Hans Dickel](mailto:hans@geekfog.net)
+- Hans Dickel [✉️](mailto:hans@geekfog.net) [🌍](https://www.linkedin.com/in/hansdickel) [💻](https://github.com/geekfog)
 
 \~ END \~ 

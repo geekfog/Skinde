@@ -104,7 +104,7 @@ public static class Program
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
-        if (!app.Environment.IsDevelopment())
+        if (Server.IsProduction)
         {
             app.UseExceptionHandler("/Error");
             app.UseHsts();
