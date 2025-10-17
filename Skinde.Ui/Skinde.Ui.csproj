@@ -22,7 +22,7 @@
 	<PackageReference Include="Markdig" Version="0.41.3" />
 	<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="[8.0.19,9.0.0)" />
 	<PackageReference Include="Microsoft.Build.Framework" Version="17.14.8" />
-	<PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" />
+	<PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.28" />
 	<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
 	<PackageReference Include="MudBlazor" Version="8.11.0" />
   </ItemGroup>
