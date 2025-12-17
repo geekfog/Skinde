@@ -47,14 +47,15 @@ These are expected, but not guaranteed, enhancements in the future.
 
 ## Development
 
-- [Visual Studio 2022](https://visualstudio.microsoft.com/) with [Bundler & Minifier 2022+](https://marketplace.visualstudio.com/items?itemName=Failwyn.BundlerMinifier64)
-  - Visual Studio 2026 also works (initial testing with Insider edition with Bundler & Minifier caused issues)
-
-- [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [Visual Studio 2026](https://visualstudio.microsoft.com/) or [Visual Studio 2022](https://visualstudio.microsoft.com/) x64 or ARM64
+  
+- [Bundler & Minifier 2022+](https://marketplace.visualstudio.com/items?itemName=Failwyn.BundlerMinifier64). although some [users experienced issues](https://github.com/failwyn/BundlerMinifier/issues/45) with Visual Studio 2026 when installing the extension
+  
+- [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 - [Blazor Server](https://learn.microsoft.com/en-us/aspnet/core/blazor/?view=aspnetcore-8.0)
 - [C#](https://dotnet.microsoft.com/en-us/languages/csharp)
 - [MudBlazor](https://www.mudblazor.com/)
-- [Git for Windows](https://gitforwindows.org/) (ARM64 or x64) -- used for command-line git support with *Skinde.Build*
+- [Git for Windows](https://gitforwindows.org/) (x64 or ARM64) -- used for command-line git support with *Skinde.Build*
 
 Since *Skinde.Ui* uses, and by default [MSBUILD locks](https://github.com/dotnet/msbuild/issues/4743), the DLL built by *Skinde.Build*, set the following environmental variable to prevent the locking:
 
@@ -197,10 +198,10 @@ Right now, this requires the use of a release branch when doing development. Add
 | Project        | Purpose                                                      | .NET Technology   |
 | -------------- | ------------------------------------------------------------ | ----------------- |
 | Skinde.Build   | Update *Directory.Build.Props* programmatically as a Task    | .NET Standard 2.0 |
-| Skinde.Client  | API calls into Kinde (it is acting as an M2M Client)         | .NET 8            |
-| Skinde.Tests   | Unit Testing (Not currently in use other than to have as part of the pipeline process) | .NET 8            |
-| Skinde.Ui      | Main Application: Website                                    | .NET 8            |
-| Skinde.Utility | Independent Helpers                                          | .NET 8            |
+| Skinde.Client  | API calls into Kinde (it is acting as an M2M Client)         | .NET 10           |
+| Skinde.Tests   | Unit Testing (Not currently in use other than to have as part of the pipeline process) | .NET 10           |
+| Skinde.Ui      | Main Application: Website                                    | .NET 10           |
+| Skinde.Utility | Independent Helpers                                          | .NET 10           |
 
 # Resources
 
@@ -217,8 +218,9 @@ Right now, this requires the use of a release branch when doing development. Add
 
 # Version History
 
-| Date       | Version  | .NET Platform | Notes                                                        |
+| Date       | Release  | .NET Platform | Notes                                                        |
 | ---------- | -------- | ------------- | ------------------------------------------------------------ |
+| 2025-12-16 | 01.10.01 | .NET 10       | Upgrade to .NET 10                                           |
 | 2025-12-16 | 01.08.02 | .NET 8        | Upgrade NuGet Packages (security fixes of vulnerabilities)   |
 | 2025-08-19 | 01.08.01 | .NET 8        | Conversion from closed-source on Azure DevOps to open-source on GitHub. Add support for configuration-based Azure Resource naming with pipeline variables. |
 

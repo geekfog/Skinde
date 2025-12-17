@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="azure-arm-akv.bicep" />
+    <File Path="azure-arm.bicep" />
+    <File Path="azure-pipelines-build.yaml" />
+    <File Path="azure-pipelines-info.yaml" />
+    <File Path="azure-pipelines-release.yaml" />
+    <File Path="azure-pipelines-shared.yaml" />
+    <File Path="azure-pipelines.yaml" />
+    <File Path="Directory.Build.props" />
+    <File Path="LICENSE.txt" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="Skinde.Build/Skinde.Build.csproj" />
+  <Project Path="Skinde.Client/Skinde.Client.csproj" />
+  <Project Path="Skinde.Tests/Skinde.Tests.csproj" />
+  <Project Path="Skinde.Ui/Skinde.Ui.csproj" />
+  <Project Path="Skinde.Utility/Skinde.Utility.csproj" />
+</Solution>
