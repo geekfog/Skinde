@@ -18,13 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
-	<PackageReference Include="Azure.Identity" Version="1.15.0" />
-	<PackageReference Include="Markdig" Version="0.41.3" />
-	<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="[8.0.19,9.0.0)" />
-	<PackageReference Include="Microsoft.Build.Framework" Version="17.14.8" />
-	<PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" />
-	<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
-	<PackageReference Include="MudBlazor" Version="8.11.0" />
+	<PackageReference Include="Azure.Identity" Version="1.17.1" />
+	<PackageReference Include="Markdig" Version="0.44.0" />
+	<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="[8.0.19,9.0)" />
+	<PackageReference Include="Microsoft.Build.Framework" Version="18.0.2" />
+	<PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.0.2" />
+	<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
+	<PackageReference Include="MudBlazor" Version="8.15.0" />
   </ItemGroup>
 	
   <ItemGroup>

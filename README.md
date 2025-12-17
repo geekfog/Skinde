@@ -1,5 +1,5 @@
 # Introduction
-<img src="images/favicon-0128.png" alt="favicon" style="zoom:80%; float:right;" />Skinde (Sub-Kinde Administrator) is an open source tool built on top of the Kinde OAuth2 SaaS platform. It offers a lightweight subset of Kinde's capabilities focused on secured delegation of user and organization management.
+<img src="Images/favicon-0128.png" alt="favicon" style="zoom:80%; float:right;" />Skinde (Sub-Kinde Administrator) is an open source tool built on top of the Kinde OAuth2 SaaS platform. It offers a lightweight subset of Kinde's capabilities focused on secured delegation of user and organization management.
 
 Key Features:
 
@@ -16,11 +16,6 @@ Kinde leverages [Well-Known](https://localhost:7076/.well-known/openid-configura
 # Licensing
 
 This uses the GNU Public License v3 (GPL 3.0) [license](./LICENSE.txt).
-
-# Version History
-| Version | .NET Platform | Notes                                                        |
-| ------- | ------------- | ------------------------------------------------------------ |
-| 1.08.01 | .NET 8        | Conversion from closed-source on Azure DevOps to open-source on GitHub. Add support for configuration-based Azure Resource naming with pipeline variables. |
 
 # Potential Future Enhancements
 
@@ -52,8 +47,10 @@ These are expected, but not guaranteed, enhancements in the future.
 
 ## Development
 
-- [Visual Studio 2022](https://visualstudio.microsoft.com/) with [Bundler & Minifier 2022+](https://marketplace.visualstudio.com/items?itemName=Failwyn.BundlerMinifier64) Extension
-- [ASP.NET "Core" 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [Visual Studio 2022](https://visualstudio.microsoft.com/) with [Bundler & Minifier 2022+](https://marketplace.visualstudio.com/items?itemName=Failwyn.BundlerMinifier64)
+  - Visual Studio 2026 also works (initial testing with Insider edition with Bundler & Minifier caused issues)
+
+- [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 - [Blazor Server](https://learn.microsoft.com/en-us/aspnet/core/blazor/?view=aspnetcore-8.0)
 - [C#](https://dotnet.microsoft.com/en-us/languages/csharp)
 - [MudBlazor](https://www.mudblazor.com/)
@@ -217,6 +214,13 @@ Right now, this requires the use of a release branch when doing development. Add
   4. Replace \> with %3E
   5. Remove all new lines
 - [MudBlazor Components](https://www.mudblazor.com/components/menu#simple-menu)
+
+# Version History
+
+| Date       | Version  | .NET Platform | Notes                                                        |
+| ---------- | -------- | ------------- | ------------------------------------------------------------ |
+| 2025-12-16 | 01.08.02 | .NET 8        | Upgrade NuGet Packages (security fixes of vulnerabilities)   |
+| 2025-08-19 | 01.08.01 | .NET 8        | Conversion from closed-source on Azure DevOps to open-source on GitHub. Add support for configuration-based Azure Resource naming with pipeline variables. |
 
 # Contributions
 
